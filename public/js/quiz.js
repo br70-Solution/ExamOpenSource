@@ -5,8 +5,8 @@
 
   fetch('/api/config').then(r=>r.json()).then(c=>{
     $('q-count').textContent=c.totalQuestions;
-    $('total-q').textContent=c.totalQuestions;
-    $('live-total').textContent=c.totalQuestions;
+    if($('total-q'))$('total-q').textContent=c.totalQuestions;
+    if($('live-total'))$('live-total').textContent=c.totalQuestions;
     document.title=c.title;
   }).catch(()=>{});
 
@@ -18,7 +18,24 @@
     try{
       const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fullName:name,groupNumber:group})});
       const data=await res.json();
-      if(!res.ok){al.innerHTML=data.error+(data.score!==undefined?`<br>Note: <strong>${data.score}/${data.total}</strong>`:'');al.classList.add('show');btn.disabled=false;btn.textContent="COMMENCER L'EXAMEN";return;}
+      if(res.status===409){
+        // BLOQUÉ — L'étudiant a déjà passé l'examen
+        al.innerHTML=`<div style="text-align:center;padding:10px 0">
+          <div style="font-size:1.3rem;font-weight:800;color:var(--danger);margin-bottom:8px">⛔ ACCÈS REFUSÉ</div>
+          <div style="margin-bottom:6px">${data.error}</div>
+          ${data.score!==undefined?`<div style="font-size:1.1rem;font-weight:700;margin-top:8px">Votre note : <span style="color:var(--primary)">${data.score} / ${data.total}</span></div><div style="font-size:0.9rem;color:var(--text-muted);margin-top:4px">(${Math.round((data.score/data.total)*100)}%)</div>`:''}
+        </div>`;
+        al.classList.add('show');
+        btn.disabled=true;
+        btn.textContent='EXAMEN DÉJÀ PASSÉ';
+        btn.style.opacity='0.5';
+        btn.style.cursor='not-allowed';
+        // Disable form inputs too
+        $('fullName').disabled=true;
+        $('groupNumber').disabled=true;
+        return;
+      }
+      if(!res.ok){al.innerHTML=data.error;al.classList.add('show');btn.disabled=false;btn.textContent="COMMENCER L'EXAMEN";return;}
       session=data.session;
       $('student-name').textContent=`${name} (G: ${group})`;
       endTime=new Date(data.startTime).getTime()+DURATION_MS;
@@ -31,11 +48,8 @@
     const res=await fetch('/api/questions',{headers:{'X-Session-Token':session}});
     const data=await res.json();
     questions=data.questions;
-    // Restore saved answers (they are definitive)
     if(data.savedAnswers){
       data.savedAnswers.forEach(a=>{answers[a.question_index]=a.selected_answer;});
-      // We don't know which were correct from saved data, so recalculate would need server support
-      // For simplicity, count them as answered (score will show on server side)
     }
     $('total-q').textContent=questions.length;
     $('live-total').textContent=questions.length;
@@ -43,6 +57,7 @@
     startTimer();
     $('login-section').classList.add('hidden');
     $('quiz-section').classList.remove('hidden');
+    fetchScore();
   }
 
   function showQ(i){
@@ -50,7 +65,7 @@
     currentIdx=i;
     const q=questions[i];
     $('q-id').textContent=`QUESTION ${i+1}`;
-    $('q-cat').textContent=`• ${q.category||'LOGICIEL LIBRE - OPEN SOURCE'}`.toUpperCase();
+    $('q-cat').textContent=`• ${q.category||'LINUX'}`.toUpperCase();
     $('current-q').textContent=i+1;
     $('q-text').textContent=q.question;
 
@@ -64,35 +79,21 @@
   }
 
   window._sel=async j=>{
-    if(answers[currentIdx]!==undefined)return; // Already answered (definitive)
+    if(answers[currentIdx]!==undefined)return;
     answers[currentIdx]=j;
-
-    // Send to server and get correctness
     try{
-      const res=await fetch('/api/answer',{method:'POST',headers:{'Content-Type':'application/json','X-Session-Token':session},body:JSON.stringify({questionIndex:currentIdx,selectedAnswer:j})});
-      const data=await res.json();
-      if(data.saved){
-        // Check if correct from server response
-        // We need to update the server to return isCorrect
-        // For now we'll fetch the score after each answer
-        fetchScore();
-      }
+      await fetch('/api/answer',{method:'POST',headers:{'Content-Type':'application/json','X-Session-Token':session},body:JSON.stringify({questionIndex:currentIdx,selectedAnswer:j})});
+      fetchScore();
     }catch(e){}
-
-    // Lock the question visually
     showQ(currentIdx);
-
-    // Auto-advance after 800ms
     if(currentIdx<questions.length-1){
       setTimeout(()=>showQ(currentIdx+1),800);
     } else {
-      // Last question answered — auto submit after delay
       setTimeout(()=>submitExam(),1500);
     }
   };
 
   async function fetchScore(){
-    // Quick endpoint to get current correct count
     try{
       const res=await fetch('/api/my-score',{headers:{'X-Session-Token':session}});
       const data=await res.json();
