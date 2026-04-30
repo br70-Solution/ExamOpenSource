@@ -23,7 +23,7 @@
         al.innerHTML=`<div style="text-align:center;padding:10px 0">
           <div style="font-size:1.3rem;font-weight:800;color:var(--danger);margin-bottom:8px">⛔ ACCÈS REFUSÉ</div>
           <div style="margin-bottom:6px">${data.error}</div>
-          ${data.score!==undefined?`<div style="font-size:1.1rem;font-weight:700;margin-top:8px">Votre note : <span style="color:var(--primary)">${data.score} / ${data.total}</span></div><div style="font-size:0.9rem;color:var(--text-muted);margin-top:4px">(${Math.round((data.score/data.total)*100)}%)</div>`:''}
+          ${data.score!==undefined?`<div style="font-size:1.1rem;font-weight:700;margin-top:8px">Votre note : <span style="color:var(--primary)">${data.score} / ${data.total}</span></div><div style="font-size:1.2rem;font-weight:800;color:var(--primary);margin-top:6px">${((data.score/data.total)*20).toFixed(2)} / 20</div><div style="font-size:0.9rem;color:var(--text-muted);margin-top:4px">(${Math.round((data.score/data.total)*100)}%)</div>`:''}
         </div>`;
         al.classList.add('show');
         btn.disabled=true;
@@ -118,8 +118,10 @@
       const res=await fetch('/api/submit',{method:'POST',headers:{'Content-Type':'application/json','X-Session-Token':session},body:'{}'});
       const data=await res.json();
       $('quiz-section').classList.add('hidden');$('result-section').classList.remove('hidden');
+      const note20=((data.score/data.totalQuestions)*20).toFixed(2);
       $('final-score').textContent=data.score;$('final-total').textContent=`/ ${data.totalQuestions}`;
-      $('final-pct').textContent=`${data.percentage}%`;
+      $('final-pct').textContent=`${note20} / 20`;
+      if($('final-pct2'))$('final-pct2').textContent=`${data.percentage}%`;
       const circle=document.querySelector('.score-circle');
       if(data.percentage>=50){$('final-pct').style.color='var(--success)';$('final-msg').textContent='🎉 Félicitations, vous avez réussi !';circle.style.borderColor='var(--success)';}
       else{$('final-pct').style.color='var(--danger)';$('final-msg').textContent='Résultat insuffisant.';circle.style.borderColor='var(--danger)';}
