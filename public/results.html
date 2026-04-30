@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Résultats</title><link rel="stylesheet" href="/css/style.css"></head>
+<body>
+<div style="padding:24px;max-width:900px;margin:0 auto">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:24px">
+    <div><h2 style="color:var(--primary)">📊 Résultats</h2><p class="subtitle">Mis à jour en temps réel</p></div>
+    <a href="/" class="btn btn-secondary btn-sm" style="text-decoration:none">← Retour</a>
+  </div>
+  <div class="card card-full">
+    <div style="overflow-x:auto"><table class="results-table"><thead><tr><th>#</th><th>Nom</th><th>Groupe</th><th>Note</th><th>%</th><th>Statut</th></tr></thead><tbody id="res"></tbody></table></div>
+    <p id="empty" class="text-center subtitle mt-2">Chargement...</p>
+  </div>
+</div>
+<script>
+function load(){fetch('/api/results-public').then(r=>r.json()).then(d=>{const tb=document.getElementById('res'),em=document.getElementById('empty');if(!d.results||!d.results.length){tb.innerHTML='';em.textContent='Aucun résultat';return}em.style.display='none';tb.innerHTML=d.results.map((r,i)=>`<tr><td>${i+1}</td><td><strong>${r.fullName}</strong></td><td>${r.groupNumber}</td><td>${r.score}/${r.totalQuestions}</td><td>${r.percentage}%</td><td><span class="badge ${r.percentage>=50?'badge-success':'badge-danger'}">${r.percentage>=50?'Réussi':'Échoué'}</span></td></tr>`).join('')}).catch(()=>{})}
+load();setInterval(load,5000);
+</script>
+</body></html>

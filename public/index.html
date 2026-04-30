@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Examen - Logiciel Libre & Open Source</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="login-section" class="page-wrapper">
+  <div class="card card-lg fade-in">
+    <div class="uni-header">
+      <div class="uni-name">Université d'Alger 2 Abou El Kacem Saâdallah</div>
+      <div class="uni-faculty">Faculté des Langues Étrangères<br>Département d'Allemand</div>
+      <div class="session-badge">🎓 Session d'Examen - S1</div>
+      <div class="exam-title">Logiciel Libre - Open Source</div>
+      <div class="prof-name">Mr Bouafia Rehabi</div>
+      <div class="divider"></div>
+    </div>
+    <div id="login-alert" class="alert alert-error"></div>
+    <div class="form-section-title">Identité du candidat</div>
+    <form id="login-form">
+      <div class="form-group"><input type="text" id="fullName" class="form-control" placeholder="Nom et Prénom" required minlength="3"></div>
+      <div class="form-group"><input type="text" id="groupNumber" class="form-control" placeholder="Numéro de groupe" required></div>
+      <div class="info-box">
+        <ul>
+          <li>Durée totale : 1 heure</li>
+          <li>Nombre de questions : <span id="q-count">150</span></li>
+          <li>Validation immédiate après envoi</li>
+        </ul>
+      </div>
+      <button type="submit" class="btn btn-primary" id="login-btn">COMMENCER L'EXAMEN</button>
+    </form>
+    <div class="text-center mt-2"><div class="year-badge">Année Universitaire 2025/2026</div><div class="version">Système Académique v2.1</div></div>
+  </div>
+</div>
+
+<!-- ===== QUIZ ===== -->
+<div id="quiz-section" class="hidden">
+  <div class="quiz-topbar">
+    <div class="topbar-item"><div class="topbar-label">Étudiant</div><div class="topbar-value" id="student-name">—</div></div>
+    <div class="topbar-item"><div class="topbar-label">Note</div><div class="topbar-value score-val"><span id="live-score">0</span> / <span id="live-total">0</span></div></div>
+    <div class="topbar-item"><div class="topbar-label">Progression</div><div class="topbar-value">Question <span id="current-q">1</span>/<span id="total-q">0</span></div></div>
+    <div class="timer-box" id="timer-box"><span>⏱</span><span class="time" id="timer-display">60:00</span></div>
+  </div>
+
+  <div class="question-wrapper">
+    <div class="question-meta">
+      <div><span class="question-id" id="q-id">QUESTION 1</span> <span class="question-cat" id="q-cat">• LOGICIEL LIBRE - OPEN SOURCE</span></div>
+      <div class="question-prof">Mr Bouafia Rehabi</div>
+    </div>
+    <div class="question-text" id="q-text"></div>
+    <div class="options-list" id="q-options"></div>
+    <div class="question-footer">
+      <div class="definitive-warning">Toute réponse est définitive.</div>
+      <div class="score-state"><div class="label">État du score</div><div class="value"><span id="correct-count">0</span> correctes</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESULT ===== -->
+<div id="result-section" class="page-wrapper hidden">
+  <div class="card card-lg fade-in">
+    <div class="score-display">
+      <div class="uni-name" style="font-size:0.9rem;margin-bottom:16px">Examen Terminé</div>
+      <div class="score-circle"><div class="score-value" id="final-score">0</div><div class="score-label" id="final-total">/ 0</div></div>
+      <p id="final-pct" style="font-size:1.4rem;font-weight:700;margin-top:12px;color:var(--primary)"></p>
+      <p id="final-msg" class="subtitle mt-2"></p>
+    </div>
+    <div class="text-center mt-2"><a href="/resultats" class="btn btn-secondary btn-sm" style="text-decoration:none">📊 Voir les résultats</a></div>
+  </div>
+</div>
+
+<script src="/js/quiz.js"></script>
+</body>
+</html>
