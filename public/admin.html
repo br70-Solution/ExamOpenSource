@@ -23,13 +23,14 @@
   <div class="card card-full">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <h3>Liste des candidats</h3>
-      <div style="display:flex;gap:8px"><input type="text" id="search" class="form-control" placeholder="Rechercher..." style="max-width:200px;padding:8px 12px;font-size:0.85rem" oninput="filter()"><button class="btn btn-secondary btn-sm" onclick="csv()">📥 CSV</button></div>
+      <div style="display:flex;gap:8px"><input type="text" id="search" class="form-control" placeholder="Rechercher..." style="max-width:200px;padding:8px 12px;font-size:0.85rem" oninput="filter()"><button class="btn btn-secondary btn-sm" onclick="exportXlsx()">📥 Excel</button></div>
     </div>
     <div style="overflow-x:auto"><table class="results-table"><thead><tr><th>#</th><th>Nom</th><th>Groupe</th><th>Note</th><th>/20</th><th>%</th><th>Statut</th><th>Durée</th></tr></thead><tbody id="tbody"></tbody></table></div>
     <p id="empty" class="text-center subtitle mt-2 hidden">Aucun résultat</p>
   </div>
 </div>
 <div class="modal-overlay" id="cm"><div class="card modal"><h3>⚠️ Supprimer toutes les données ?</h3><p class="subtitle mt-2">Étudiants, réponses et notes supprimés. <strong>Irréversible.</strong></p><div class="modal-actions"><button class="btn btn-secondary" onclick="document.getElementById('cm').classList.remove('active')">Annuler</button><button class="btn btn-danger" onclick="cleanup()">Supprimer</button></div></div></div>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script>
 let pw='',all=[];
 document.getElementById('pass').addEventListener('keyup',e=>{if(e.key==='Enter')login()});
@@ -39,6 +40,22 @@ function stats(){const sub=all.filter(r=>r.submitted),act=all.filter(r=>!r.submi
 function render(data){const tb=document.getElementById('tbody'),em=document.getElementById('empty');if(!data.length){tb.innerHTML='';em.classList.remove('hidden');return}em.classList.add('hidden');tb.innerHTML=data.map((r,i)=>{const p=r.total_questions?Math.round((r.score/r.total_questions)*100):0;const n20=r.total_questions?((r.score/r.total_questions)*20).toFixed(2):'—';let b,c;if(!r.submitted){b='En cours';c='badge-active'}else if(p>=50){b='Réussi';c='badge-success'}else{b='Échoué';c='badge-danger'}let dur='—';if(r.start_time&&r.end_time){dur=Math.round((new Date(r.end_time)-new Date(r.start_time))/60000)+' min'}else if(!r.submitted){dur=(r.answered_count||0)+' rép.'}return`<tr><td>${i+1}</td><td><strong>${r.full_name}</strong></td><td>${r.group_number}</td><td>${r.submitted?r.score+'/'+r.total_questions:'—'}</td><td><strong>${r.submitted?n20:'—'}</strong></td><td>${r.submitted?p+'%':'—'}</td><td><span class="badge ${c}">${b}</span></td><td>${dur}</td></tr>`}).join('')}
 function filter(){const q=document.getElementById('search').value.toLowerCase();render(all.filter(r=>r.full_name.toLowerCase().includes(q)||r.group_number.toLowerCase().includes(q)))}
 async function cleanup(){document.getElementById('cm').classList.remove('active');await fetch('/api/cleanup',{method:'DELETE',headers:{'X-Admin-Password':pw}});all=[];stats();render([])}
-function csv(){const sub=all.filter(r=>r.submitted);if(!sub.length){alert('Rien à exporter');return}let c='Nom,Groupe,Note,Total,Note_sur_20,Pourcentage,Statut\n';sub.forEach(r=>{const p=r.total_questions?Math.round((r.score/r.total_questions)*100):0;const n20=r.total_questions?((r.score/r.total_questions)*20).toFixed(2):'0';c+=`"${r.full_name}","${r.group_number}",${r.score},${r.total_questions},${n20},${p}%,${p>=50?'Réussi':'Échoué'}\n`});const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+c],{type:'text/csv;charset=utf-8;'}));a.download=`resultats_${new Date().toISOString().slice(0,10)}.csv`;a.click()}
+function exportXlsx(){
+  const sub=all.filter(r=>r.submitted);
+  if(!sub.length){alert('Rien à exporter');return}
+  const header=['#','Nom','Groupe','Note','Total','Note /20','Pourcentage','Statut','Durée'];
+  const rows=sub.map((r,i)=>{
+    const p=r.total_questions?Math.round((r.score/r.total_questions)*100):0;
+    const n20=r.total_questions?parseFloat(((r.score/r.total_questions)*20).toFixed(2)):0;
+    let dur='—';
+    if(r.start_time&&r.end_time){dur=Math.round((new Date(r.end_time)-new Date(r.start_time))/60000)+' min'}
+    return[i+1,r.full_name,r.group_number,r.score,r.total_questions,n20,p+'%',p>=50?'Réussi':'Échoué',dur];
+  });
+  const ws=XLSX.utils.aoa_to_sheet([header,...rows]);
+  ws['!cols']=[{wch:4},{wch:28},{wch:10},{wch:6},{wch:6},{wch:8},{wch:10},{wch:10},{wch:10}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Résultats');
+  XLSX.writeFile(wb,`resultats_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
 </script>
 </body></html>
