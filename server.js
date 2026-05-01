@@ -62,14 +62,18 @@ app.get('/api/config', (_, res) => {
 app.post('/api/login', (req, res) => {
   const { fullName, groupNumber } = req.body;
   if (!fullName || !groupNumber) return res.status(400).json({ error: 'Champs obligatoires' });
-  const name = fullName.trim(), group = groupNumber.trim();
+  // Normalisation anti-triche : minuscules, espaces multiples supprimés
+  const name = fullName.trim().replace(/\s+/g, ' ');
+  const group = groupNumber.trim().replace(/\s+/g, ' ');
+  const nameNorm = name.toLowerCase();
+  const groupNorm = group.toLowerCase();
   if (name.length < 3) return res.status(400).json({ error: 'Nom trop court' });
 
   const db = getDB();
-  const submitted = db.prepare('SELECT * FROM students WHERE full_name=? AND group_number=? AND submitted=1').get(name, group);
+  const submitted = db.prepare('SELECT * FROM students WHERE LOWER(TRIM(full_name))=? AND LOWER(TRIM(group_number))=? AND submitted=1').get(nameNorm, groupNorm);
   if (submitted) { db.close(); return res.status(409).json({ error: 'Vous avez déjà passé cet examen', score: submitted.score, total: submitted.total_questions }); }
 
-  const active = db.prepare('SELECT * FROM students WHERE full_name=? AND group_number=? AND submitted=0').get(name, group);
+  const active = db.prepare('SELECT * FROM students WHERE LOWER(TRIM(full_name))=? AND LOWER(TRIM(group_number))=? AND submitted=0').get(nameNorm, groupNorm);
   if (active) { db.close(); return res.json({ session: active.session_token, startTime: active.start_time, resumed: true }); }
 
   const token = uuidv4(), start = new Date().toISOString();
