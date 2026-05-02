@@ -35,6 +35,22 @@
         $('groupNumber').disabled=true;
         return;
       }
+      if(res.status===410){
+        // TEMPS ÉCOULÉ — Session expirée
+        al.innerHTML=`<div style="text-align:center;padding:10px 0">
+          <div style="font-size:1.3rem;font-weight:800;color:var(--warning);margin-bottom:8px">⏰ TEMPS ÉCOULÉ</div>
+          <div style="margin-bottom:6px">${data.error}</div>
+          ${data.score!==undefined?`<div style="font-size:1.1rem;font-weight:700;margin-top:8px">Votre note : <span style="color:var(--primary)">${data.score} / ${data.total}</span></div><div style="font-size:1.2rem;font-weight:800;color:var(--primary);margin-top:6px">${((data.score/data.total)*20).toFixed(2)} / 20</div><div style="font-size:0.9rem;color:var(--text-muted);margin-top:4px">(${Math.round((data.score/data.total)*100)}%)</div>`:''}
+        </div>`;
+        al.classList.add('show');
+        btn.disabled=true;
+        btn.textContent='TEMPS ÉCOULÉ';
+        btn.style.opacity='0.5';
+        btn.style.cursor='not-allowed';
+        $('fullName').disabled=true;
+        $('groupNumber').disabled=true;
+        return;
+      }
       if(!res.ok){al.innerHTML=data.error;al.classList.add('show');btn.disabled=false;btn.textContent="COMMENCER L'EXAMEN";return;}
       session=data.session;
       $('student-name').textContent=`${name} (G: ${group})`;

@@ -74,7 +74,20 @@ app.post('/api/login', (req, res) => {
   if (submitted) { db.close(); return res.status(409).json({ error: 'Vous avez déjà passé cet examen', score: submitted.score, total: submitted.total_questions }); }
 
   const active = db.prepare('SELECT * FROM students WHERE LOWER(TRIM(full_name))=? AND LOWER(TRIM(group_number))=? AND submitted=0').get(nameNorm, groupNorm);
-  if (active) { db.close(); return res.json({ session: active.session_token, startTime: active.start_time, resumed: true }); }
+  if (active) {
+    const elapsed = Date.now() - new Date(active.start_time).getTime();
+    const limitMs = DURATION_MINUTES * 60 * 1000;
+    if (elapsed >= limitMs) {
+      // Temps écoulé — auto-soumission puis blocage
+      const result = db.prepare('SELECT COUNT(*) as total, SUM(is_correct) as correct FROM answers WHERE student_id=?').get(active.id);
+      const totalQ = loadQuestions().length;
+      const score = result.correct || 0;
+      db.prepare('UPDATE students SET submitted=1, score=?, total_questions=?, end_time=? WHERE id=?').run(score, totalQ, new Date().toISOString(), active.id);
+      db.close();
+      return res.status(410).json({ error: 'Votre temps est écoulé. Veuillez contacter le professeur Mr Bouafia Rehabi.', score, total: totalQ, expired: true });
+    }
+    db.close(); return res.json({ session: active.session_token, startTime: active.start_time, resumed: true });
+  }
 
   const token = uuidv4(), start = new Date().toISOString();
   db.prepare('INSERT INTO students (session_token,full_name,group_number,start_time) VALUES (?,?,?,?)').run(token, name, group, start);
